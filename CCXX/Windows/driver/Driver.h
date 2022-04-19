@@ -10,7 +10,6 @@
 
 typedef struct _DEVICE_EXTENSION {
 	PDEVICE_OBJECT pDevice;
-	UNICODE_STRING ustrDeviceName;
 	UNICODE_STRING ustrSymLinkName;
 } DEVICE_EXTENSION, *PDEVICE_EXTENSION;
 
@@ -18,12 +17,8 @@ DRIVER_INITIALIZE DriverEntry;
 NTSTATUS CreateDevice (IN PDRIVER_OBJECT pDriverObject);
 VOID OnUnload(IN PDRIVER_OBJECT pDriverObject);
 NTSTATUS DispatchRoutine(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp);
+NTSTATUS DeviceIoControlProc(IN PDEVICE_OBJECT pDeviceObject, IN PIRP pIrp);
 
+VOID allocate_string(PUNICODE_STRING pUnicodeString, LPCWSTR lpStrings);
+VOID free_string(PUNICODE_STRING pUnicodeString);
 
-#ifdef ALLOC_PRAGMA
-
-#pragma alloc_text(INIT, DriverEntry)
-#pragma alloc_text(INIT, CreateDevice)
-//#pragma alloc_text(PAGE, DispatchRoutine)
-
-#endif

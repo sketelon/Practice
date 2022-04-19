@@ -1,12 +1,24 @@
 #include "Driver.h"
 
+#ifdef ALLOC_PRAGMA
 
+#pragma alloc_text(INIT, DriverEntry)
+#pragma alloc_text(INIT, CreateDevice)
+//#pragma alloc_text(PAGE, DispatchRoutine)
 
+#endif
 
+VOID
+WorkThread(
+	_In_ PVOID pContext
+)
+{
+	UNREFERENCED_PARAMETER(pContext);
+}
 
-NTSTATUS DriverEntry (
-			IN PDRIVER_OBJECT pDriverObject,
-			IN PUNICODE_STRING pRegistryPath	) 
+NTSTATUS DriverEntry(
+	IN PDRIVER_OBJECT pDriverObject,
+	IN PUNICODE_STRING pRegistryPath)
 {
 	UNREFERENCED_PARAMETER(pRegistryPath);
 
@@ -20,28 +32,30 @@ NTSTATUS DriverEntry (
 		pDriverObject->MajorFunction[i] = DispatchRoutine;
 	}
 
+	pDriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = DeviceIoControlProc;
+
 	status = CreateDevice(pDriverObject);
+
 
 	KdPrint(("DriverEntry end\n"));
 	return status;
 }
 
 
-NTSTATUS CreateDevice (
-		IN PDRIVER_OBJECT	pDriverObject) 
+NTSTATUS CreateDevice(
+	IN PDRIVER_OBJECT	pDriverObject)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	PDEVICE_OBJECT pDevObj = NULL;
 	PDEVICE_EXTENSION pDevExt = NULL;
 	UNICODE_STRING ustrDevName = RTL_CONSTANT_STRING(DEVICE_NAME);
-	UNICODE_STRING ustrSymLinkName = RTL_CONSTANT_STRING(SYMBOLIC_NAME);
 
 	status = IoCreateDevice(pDriverObject,
-						sizeof(DEVICE_EXTENSION),	// allocate memory to pDevExt
-						&ustrDevName,
-						FILE_DEVICE_UNKNOWN,
-						0, TRUE,
-						&pDevObj);
+		sizeof(DEVICE_EXTENSION),	// allocate memory to pDevExt
+		&ustrDevName,
+		FILE_DEVICE_UNKNOWN,
+		0, TRUE,
+		&pDevObj);
 	if (!NT_SUCCESS(status))
 	{
 		return status;
@@ -50,14 +64,12 @@ NTSTATUS CreateDevice (
 
 	pDevObj->Flags |= DO_BUFFERED_IO;
 	pDevExt = (PDEVICE_EXTENSION)pDevObj->DeviceExtension;
-	
+
 	pDevExt->pDevice = pDevObj;
-	RtlInitUnicodeString(&(pDevExt->ustrDeviceName), DEVICE_NAME);
-	RtlInitUnicodeString(&(pDevExt->ustrSymLinkName), SYMBOLIC_NAME);
+	allocate_string(&pDevExt->ustrSymLinkName, SYMBOLIC_NAME);
 
-
-	status = IoCreateSymbolicLink(&ustrSymLinkName, &ustrDevName);
-	if (!NT_SUCCESS(status)) 
+	status = IoCreateSymbolicLink(&pDevExt->ustrSymLinkName, &ustrDevName);
+	if (!NT_SUCCESS(status))
 	{
 		IoDeleteDevice(pDevObj);
 		return status;
@@ -73,26 +85,59 @@ VOID OnUnload(IN PDRIVER_OBJECT pDriverObject)
 	PDEVICE_OBJECT	pNextObj = NULL;
 
 	pNextObj = pDriverObject->DeviceObject;
-	while (pNextObj != NULL) 
+	while (pNextObj != NULL)
 	{
 		PDEVICE_EXTENSION pDevExt = (PDEVICE_EXTENSION)
 			pNextObj->DeviceExtension;
 
-		IoDeleteSymbolicLink(&(pDevExt->ustrSymLinkName));
+		IoDeleteSymbolicLink(&pDevExt->ustrSymLinkName);
 		IoDeleteDevice(pDevExt->pDevice);
+		free_string(&pDevExt->ustrSymLinkName);
 
 		pNextObj = pNextObj->NextDevice;
 
 	}
 }
 
+NTSTATUS DeviceIoControlProc(IN PDEVICE_OBJECT pDeviceObject, IN PIRP pIrp)
+{
+	UNREFERENCED_PARAMETER(pDeviceObject);
+	pIrp->IoStatus.Information = 0;
+	NTSTATUS status = STATUS_SUCCESS;
+	PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
+	if (NULL == pStack)
+	{
+		status = STATUS_INTERNAL_ERROR;
+		goto _EXIT;
+	}
+
+	switch (pStack->Parameters.DeviceIoControl.IoControlCode)
+	{
+	case REQUEST_MY:
+	{
+		if (pStack->Parameters.DeviceIoControl.InputBufferLength != 0 ||
+			pStack->Parameters.DeviceIoControl.OutputBufferLength != 0)
+		{
+
+		}
+	}
+	break;
+	default:
+		break;
+	};
+
+
+_EXIT:
+	pIrp->IoStatus.Status = status;
+	IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+	return pIrp->IoStatus.Status;
+}
+
+
 NTSTATUS DispatchRoutine(IN PDEVICE_OBJECT pDeviceObject, IN PIRP pIrp)
 {
 	UNREFERENCED_PARAMETER(pDeviceObject);
 	NTSTATUS status = STATUS_SUCCESS;
-	ULONG               inBufLength; 
-	ULONG               outBufLength;
-
 	pIrp->IoStatus.Information = 0;
 
 	PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
@@ -101,9 +146,6 @@ NTSTATUS DispatchRoutine(IN PDEVICE_OBJECT pDeviceObject, IN PIRP pIrp)
 		status = STATUS_INTERNAL_ERROR;
 		goto _EXIT;
 	}
-
-	inBufLength = pStack->Parameters.DeviceIoControl.InputBufferLength;
-	outBufLength = pStack->Parameters.DeviceIoControl.OutputBufferLength;
 
 
 	switch (pStack->MajorFunction)
@@ -130,24 +172,31 @@ NTSTATUS DispatchRoutine(IN PDEVICE_OBJECT pDeviceObject, IN PIRP pIrp)
 		break;
 	}
 
-	switch (pStack->Parameters.DeviceIoControl.IoControlCode)
-	{
-	case REQUEST_MY:
-	{
-		if (pStack->Parameters.DeviceIoControl.InputBufferLength != 0)
-		{
-			
-		}
-	}
-	break;
-	default:
-		break;
-	};
-
-
 
 _EXIT:
 	pIrp->IoStatus.Status = status;
 	IoCompleteRequest(pIrp, IO_NO_INCREMENT);
 	return pIrp->IoStatus.Status;
+}
+
+// for warning C4996: 'ExAllocatePool': was declared deprecated
+#pragma warning(disable:4996)
+#define BUFFER_SIZE 1024
+VOID allocate_string(PUNICODE_STRING pUnicodeString, LPCWSTR lpStrings)
+{
+
+	pUnicodeString->Length = (USHORT)(wcslen(lpStrings) * sizeof(WCHAR));
+	pUnicodeString->MaximumLength = BUFFER_SIZE;
+
+	ASSERT(pUnicodeString->MaximumLength >= pUnicodeString->Length);
+
+	pUnicodeString->Buffer = ExAllocatePool(PagedPool, BUFFER_SIZE);
+	RtlCopyMemory(pUnicodeString->Buffer, lpStrings, pUnicodeString->Length);
+}
+
+VOID free_string(PUNICODE_STRING pUnicodeString)
+{
+	ExFreePool(pUnicodeString->Buffer);
+	pUnicodeString->Buffer = NULL;
+	pUnicodeString->Length = pUnicodeString->MaximumLength = 0;
 }
