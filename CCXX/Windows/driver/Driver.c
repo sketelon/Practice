@@ -8,14 +8,6 @@
 
 #endif
 
-VOID
-WorkThread(
-	_In_ PVOID pContext
-)
-{
-	UNREFERENCED_PARAMETER(pContext);
-}
-
 NTSTATUS DriverEntry(
 	IN PDRIVER_OBJECT pDriverObject,
 	IN PUNICODE_STRING pRegistryPath)
@@ -34,7 +26,7 @@ NTSTATUS DriverEntry(
 
 	pDriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = DeviceIoControlProc;
 
-	status = CreateDevice(pDriverObject);
+	status = create_device(pDriverObject);
 
 
 	KdPrint(("DriverEntry end\n"));
@@ -42,7 +34,7 @@ NTSTATUS DriverEntry(
 }
 
 
-NTSTATUS CreateDevice(
+NTSTATUS create_device(
 	IN PDRIVER_OBJECT	pDriverObject)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
@@ -66,7 +58,7 @@ NTSTATUS CreateDevice(
 	pDevExt = (PDEVICE_EXTENSION)pDevObj->DeviceExtension;
 
 	pDevExt->pDevice = pDevObj;
-	allocate_string(&pDevExt->ustrSymLinkName, SYMBOLIC_NAME);
+	RtlCreateUnicodeString(&pDevExt->ustrSymLinkName, SYMBOLIC_NAME);
 
 	status = IoCreateSymbolicLink(&pDevExt->ustrSymLinkName, &ustrDevName);
 	if (!NT_SUCCESS(status))
@@ -92,7 +84,7 @@ VOID OnUnload(IN PDRIVER_OBJECT pDriverObject)
 
 		IoDeleteSymbolicLink(&pDevExt->ustrSymLinkName);
 		IoDeleteDevice(pDevExt->pDevice);
-		free_string(&pDevExt->ustrSymLinkName);
+		RtlFreeUnicodeString(&pDevExt->ustrSymLinkName);
 
 		pNextObj = pNextObj->NextDevice;
 
@@ -177,26 +169,4 @@ _EXIT:
 	pIrp->IoStatus.Status = status;
 	IoCompleteRequest(pIrp, IO_NO_INCREMENT);
 	return pIrp->IoStatus.Status;
-}
-
-// for warning C4996: 'ExAllocatePool': was declared deprecated
-#pragma warning(disable:4996)
-#define BUFFER_SIZE 1024
-VOID allocate_string(PUNICODE_STRING pUnicodeString, LPCWSTR lpStrings)
-{
-
-	pUnicodeString->Length = (USHORT)(wcslen(lpStrings) * sizeof(WCHAR));
-	pUnicodeString->MaximumLength = BUFFER_SIZE;
-
-	ASSERT(pUnicodeString->MaximumLength >= pUnicodeString->Length);
-
-	pUnicodeString->Buffer = ExAllocatePool(PagedPool, BUFFER_SIZE);
-	RtlCopyMemory(pUnicodeString->Buffer, lpStrings, pUnicodeString->Length);
-}
-
-VOID free_string(PUNICODE_STRING pUnicodeString)
-{
-	ExFreePool(pUnicodeString->Buffer);
-	pUnicodeString->Buffer = NULL;
-	pUnicodeString->Length = pUnicodeString->MaximumLength = 0;
 }

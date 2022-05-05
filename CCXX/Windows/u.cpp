@@ -1,8 +1,14 @@
-﻿#include <windows.h>
+﻿/*
+目录：
+1. 字符串长度
+2. 路径操作
+3. CopyMemory
+4. 遍历模块信息
 
+*/
 
 /*
-	字符串长度
+	1. 字符串长度
 */
 int string_length(LPCTSTR lpString)
 {
@@ -17,7 +23,7 @@ int string_length(LPCTSTR lpString)
 }
 
 /*
-	路径操作
+	2. 路径操作
 */
 BOOL path_remove_file_spec(LPTSTR pszPath)
 {
@@ -42,7 +48,7 @@ BOOL path_remove_file_spec(LPTSTR pszPath)
 }
 
 /*
-	CopyMemory
+	3. CopyMemory
 */
 inline void copy_memory(LPVOID pvDst, LPCVOID pvSrc, SIZE_T cbCopy)
 {
@@ -55,7 +61,7 @@ inline void copy_memory(LPVOID pvDst, LPCVOID pvSrc, SIZE_T cbCopy)
 
 
 /*
-	遍历模块信息
+	4. 遍历模块信息
 */
 #include <winternl.h>
 DWORD enumerate_module_in_memory()

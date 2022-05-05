@@ -1,6 +1,15 @@
-﻿#include <windows.h>
-
-
+/*
+# 目录：
+## My Windows API
+1. 创建进程
+2. 创建文件
+3. 写文件
+4. 读文件
+5. 设备操作
+## Windows API Extension
+1. 根据进程名获得进程ID
+2. 宽字节与多字节转换
+*/
 
 
 
@@ -10,7 +19,7 @@
 
 
 /*
-	创建进程
+	1. 创建进程
 */
 BOOL create_process(LPCTSTR lpCommandLine, LPPROCESS_INFORMATION lpProcessInformation)
 {
@@ -25,7 +34,7 @@ BOOL create_process(LPCTSTR lpCommandLine, LPPROCESS_INFORMATION lpProcessInform
 
 
 /*
-	创建文件
+	2. 创建文件
 */
 HANDLE create_file(LPCTSTR lpFileName)
 {
@@ -39,7 +48,7 @@ HANDLE create_file(LPCTSTR lpFileName)
 
 
 /*
-	写文件
+	3. 写文件
 */
 BOOL read_file(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead)
 {
@@ -48,7 +57,7 @@ BOOL read_file(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead)
 }
 
 /*
-	读文件
+	4. 读文件
 */
 BOOL write_file(HANDLE hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite)
 {
@@ -58,7 +67,7 @@ BOOL write_file(HANDLE hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite)
 }
 
 /*
-	设备操作
+	5. 设备操作
 */
 BOOL device_io_control(HANDLE hDevice, 
                        DWORD dwIoControlCode, 

@@ -1,5 +1,5 @@
 #pragma once
-#include <ntddk.h>
+#include <ntifs.h>
 
 #define DEVICE_NAME    L"\\Device\\MyHelloDeviceName"
 #define SYMBOLIC_NAME  L"\\??\\MyHelloSymLinkName"
