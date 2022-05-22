@@ -48,7 +48,7 @@ HANDLE create_file(LPCTSTR lpFileName)
 
 
 /*
-	3. 写文件
+	4. 读文件
 */
 BOOL read_file(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead)
 {
@@ -56,8 +56,9 @@ BOOL read_file(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead)
     return ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, &NumberOfBytesRead, NULL);
 }
 
+
 /*
-	4. 读文件
+	3. 写文件
 */
 BOOL write_file(HANDLE hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite)
 {

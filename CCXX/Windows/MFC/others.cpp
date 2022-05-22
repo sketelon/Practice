@@ -12,3 +12,32 @@
 	3. CXXXView::pMyListWnd->GetSafeHwnd() 获得窗口句柄
 	
 */
+
+
+
+
+/*
+视图切割
+1. 重写 CFrameWnd 类成员虚函数 OnCreateClient
+2. 在虚函数中调用CSplitterWnd::CreateStatic 创建不规则框架窗口
+3. 在虚函数中调用CSplitterWnd::CreateView 创建视图窗口
+
+*/
+
+BOOL CMainFrame::OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pContext)
+{
+	// TODO: Add your specialized code here and/or call the base class
+	m_SplitterWnd.CreateStatic(this, 2, 1);
+
+	CRect rc;
+	GetClientRect(&rc);
+
+	m_SplitterWnd.CreateView(0, 0, RUNTIME_CLASS(CMainTabView), 
+		CSize(rc.Width(), rc.Height() / 5 * 3), pContext);
+	m_SplitterWnd.CreateView(1, 0, RUNTIME_CLASS(CMyEditView), 
+		CSize(rc.Width(), rc.Height() / 5 * 2), pContext);
+
+	// return CFrameWnd::OnCreateClient(lpcs, pContext);
+	// 注意此处应应修改为 return TRUE;
+	return TRUE;
+}

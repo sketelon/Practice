@@ -1,6 +1,6 @@
 
 /*
-	自动调整宽度
+	自动调整宽度适应 column 的宽度
 */
 
 void CXXXListView::adjust_column_width()
@@ -15,6 +15,23 @@ void CXXXListView::adjust_column_width()
 		GetListCtrl().SetColumnWidth(i, LVSCW_AUTOSIZE_USEHEADER);
 		int nHeaderWidth = GetListCtrl().GetColumnWidth(i);
 		GetListCtrl().SetColumnWidth(i, max(nColumnWidth, nHeaderWidth));
+	}
+	SetRedraw(TRUE);
+}
+
+/*
+	column 等宽，不要放在 OnCreate 中，可以放在 OnInitialUpdate 中
+*/
+
+void CProcessListView::equal_column_width()
+{
+	SetRedraw(FALSE);
+	CRect rc;
+	int nColumnCount = GetListCtrl().GetHeaderCtrl()->GetItemCount();
+	GetListCtrl().GetClientRect(&rc);
+	for (int i = 0; i < nColumnCount; i++)
+	{
+		GetListCtrl().SetColumnWidth(i, rc.Width() / nColumnCount);
 	}
 	SetRedraw(TRUE);
 }
@@ -38,8 +55,8 @@ void CXXXListView::set_row_heigt(int nHeight)
 void CXXXListView::insert_process()
 {
 	int nColumn = 0;
-	GetListCtrl().InsertColumn(nColumn++, _T("Name"));
-	GetListCtrl().InsertColumn(nColumn++, _T("PID"));
+	GetListCtrl().InsertColumn(nColumn++, _T("Name"), LVCFMT_CENTER);
+	GetListCtrl().InsertColumn(nColumn++, _T("PID"), LVCFMT_CENTER);
 
 	int nRow = 0;
 	PROCESSENTRY32 pe32 = { 0 };

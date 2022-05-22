@@ -46,7 +46,8 @@ NTSTATUS create_device(
 		sizeof(DEVICE_EXTENSION),	// allocate memory to pDevExt
 		&ustrDevName,
 		FILE_DEVICE_UNKNOWN,
-		0, TRUE,
+		0, 
+		FALSE,	// NOTE!!! you are not able to use share mode if it is TRUE
 		&pDevObj);
 	if (!NT_SUCCESS(status))
 	{
