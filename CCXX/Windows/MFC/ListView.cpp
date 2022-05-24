@@ -100,7 +100,7 @@ void CXXXListView::set_style()
 	LONG lStyle;
 	lStyle = GetWindowLong(m_hWnd, GWL_STYLE);	//获取当前窗口style      
 	lStyle &= ~LVS_TYPEMASK;					//清除显示方式位     
-	lStyle |= LVS_REPORT;						//设置style     
+	lStyle |= LVS_REPORT;					//设置style     
 	SetWindowLong(m_hWnd, GWL_STYLE, lStyle);	//设置style   
 
 	DWORD dwStyle = listCtrl.GetExtendedStyle();

@@ -20,6 +20,7 @@ BOOL CMyEditView::PreCreateWindow(CREATESTRUCT& cs)
 
 VOID CMyEditView::display_log(CString strLog)
 {
+	// 阻止 CEdit 控件重绘，防止界面闪烁
     GetEditCtrl().SetRedraw(FALSE);
 
     int nLineCount = GetEditCtrl().GetLineCount();
