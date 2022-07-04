@@ -46,3 +46,21 @@ VOID CMyEditView::display_log(CString strLog)
     GetEditCtrl().SetRedraw(TRUE);
 
 }
+
+
+/* 
+    背景及字体颜色，重载 WM_CTLCOLOR 消息
+ */
+
+HBRUSH CCmdDialog::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+    HBRUSH hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
+#define WHITE_COLOR RGB(255, 255, 255)
+#define BLACK_COLOR RGB(0, 0, 0)
+    if (CTLCOLOR_EDIT == nCtlColor) {
+            pDC->SetBkColor(BLACK_COLOR);
+            pDC->SetTextColor(WHITE_COLOR);
+            return (HBRUSH)::GetStockObject(BLACK_BRUSH);
+    }
+    return hbr;
+}

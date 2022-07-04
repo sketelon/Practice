@@ -9,6 +9,9 @@
 ## Windows API Extension
 1. 根据进程名获得进程ID
 2. 宽字节与多字节转换
+3. 获取进程所在用户名
+4. 获取系统信息
+5. 是否属于管理员权限
 */
 
 
@@ -89,7 +92,7 @@ BOOL device_io_control(HANDLE hDevice,
 
 
 /*
-	根据进程名获得进程ID
+	1. 根据进程名获得进程ID
 */
 
 #include <tlhelp32.h>
@@ -127,7 +130,7 @@ EXIT:
 }
 
 /*
-	宽字节与多字节转换
+	2. 宽字节与多字节转换
 */
 
 #define HEAP_FREE(lpMem) if (lpMem != NULL) {\
@@ -193,5 +196,132 @@ BOOL A2W(LPSTR lpMultiByteStr, LPWSTR &lpWideCharStr)
 	}
 
 	bRet = TRUE;
+	return bRet;
+}
+
+
+/*
+	3. 获取进程所在用户名
+*/
+DWORD get_process_user_name(LPTSTR pUserName)
+{
+	DWORD dwResult = EXIT_FAILURE;
+	HANDLE hToken = NULL;
+	DWORD dwTokenLength = 0;
+	TCHAR szAccountName[MAX_PATH] = { 0 };
+	TCHAR szDomainName[MAX_PATH] = { 0 };
+	PTOKEN_USER pTokenInformation = NULL;
+	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, TRUE, GetCurrentProcessId());
+	if (NULL == hProcess) {
+		goto _EXIT;
+	}
+
+	if (!OpenProcessToken(hProcess, TOKEN_ALL_ACCESS, &hToken)){
+		goto _EXIT;
+	}
+
+	GetTokenInformation(hToken, TokenUser, NULL, 0L, &dwTokenLength);
+	if (dwTokenLength > 0 && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+	{
+		pTokenInformation = (PTOKEN_USER)::GlobalAlloc(GPTR, dwTokenLength);
+		if (GetTokenInformation(hToken, TokenUser, pTokenInformation, dwTokenLength, &dwTokenLength))
+		{
+			SID_NAME_USE eUse = SidTypeUnknown;
+			DWORD dwAccountSize = 0L;
+			DWORD dwDomainSize = 0L;
+
+			PSID  pSid = pTokenInformation->User.Sid;
+
+			LookupAccountSid(NULL, pSid, NULL, &dwAccountSize, NULL, &dwDomainSize, &eUse);
+			if (dwAccountSize > 0 && dwDomainSize > 0 && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+			{
+				if (LookupAccountSid(NULL, pSid, szAccountName, &dwAccountSize, szDomainName, &dwDomainSize, &eUse))
+				{
+					_tcscpy(pUserName, szAccountName);
+					dwResult = EXIT_SUCCESS;
+				}
+			}
+		}
+	}
+
+_EXIT:
+	if (NULL != hProcess) {
+		CloseHandle(hProcess);
+		hProcess = NULL;
+	}
+
+	if (NULL != pTokenInformation) {
+		::GlobalFree(pTokenInformation);
+		pTokenInformation = NULL;
+	}
+
+	if (NULL != hToken) {
+		CloseHandle(hToken);
+		hToken = NULL;
+	}
+	return dwResult;
+}
+
+
+
+
+/*
+	4. 获取系统信息
+*/
+DWORD get_system_info(LPOSVERSIONINFOEXW lpOSVersionInfo)
+{
+#define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
+	typedef LONG(_stdcall *pfnRtlGetVersion)(PRTL_OSVERSIONINFOEXW lpVersionInformation);
+	pfnRtlGetVersion pRtlGetVersion;
+
+	DWORD dwResult = EXIT_FAILURE;
+	NTSTATUS status;
+	char szRtlGetVersion[] = { 'R', 't', 'l', 'G', 'e', 't', 'V', 'e', 'r', 's', 'i', 'o', 'n', 0x0 };
+	TCHAR szNtdll[] = { _T('n'), _T('t'), _T('d'), _T('l'), _T('l'), _T('.'), _T('d'), _T('l'), _T('l'), 0x00, 0x00 };
+
+	HMODULE hNtdll = GetModuleHandle(/*_T("ntdll.dll")*/szNtdll);
+	if (NULL == hNtdll) {
+		return dwResult;
+	}
+
+	pRtlGetVersion = (pfnRtlGetVersion)GetProcAddress(hNtdll, szRtlGetVersion);
+	if (pRtlGetVersion == NULL) {
+		return dwResult;
+	}
+
+	lpOSVersionInfo->dwOSVersionInfoSize = sizeof(RTL_OSVERSIONINFOEXW);
+	status = pRtlGetVersion(lpOSVersionInfo);
+	if (NT_SUCCESS(status)) {
+		dwResult = EXIT_SUCCESS;
+	}
+
+	return dwResult;
+}
+
+/*
+	5. 获取系统信息
+*/
+
+BOOL CPassUAC::IsAdmin()
+{
+	BOOL bRet = FALSE;
+	HANDLE hProcessToken = NULL;
+	TOKEN_ELEVATION tokenElevation = { 0 };
+	DWORD dwReturnLength = 0;
+
+	if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hProcessToken))
+	{
+		if (GetTokenInformation(hProcessToken, TokenElevation,
+			&tokenElevation, sizeof(tokenElevation), &dwReturnLength))
+		{
+			if (dwReturnLength == sizeof(tokenElevation) &&
+				(tokenElevation.TokenIsElevated)) {
+				bRet = TRUE;
+			}
+		}
+
+		CloseHandle(hProcessToken);
+
+	}
 	return bRet;
 }

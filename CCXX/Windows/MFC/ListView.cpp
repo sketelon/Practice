@@ -1,6 +1,21 @@
 
 /*
-	自动调整宽度适应 column 的宽度
+# 目录：
+1. 自动调整宽度适应 column 的宽度
+2. column 等宽
+3. 设置高度（取巧）
+4. 遍历进程并插入
+5. 设置风格
+6. 弹出菜单
+7. 设置系统图标
+8. 清空全部列和行
+*/
+
+
+
+
+/*
+	1. 自动调整宽度适应 column 的宽度
 */
 
 void CXXXListView::adjust_column_width()
@@ -20,10 +35,10 @@ void CXXXListView::adjust_column_width()
 }
 
 /*
-	column 等宽，不要放在 OnCreate 中，可以放在 OnInitialUpdate 中
+	2. column 等宽，不要放在 OnCreate 中，可以放在 OnInitialUpdate 中
 */
 
-void CProcessListView::equal_column_width()
+void CXXXListView::equal_column_width()
 {
 	SetRedraw(FALSE);
 	CRect rc;
@@ -38,7 +53,7 @@ void CProcessListView::equal_column_width()
 
 
 /*
-	设置高度（取巧）
+	3. 设置高度（取巧）
 */
 
 void CXXXListView::set_row_heigt(int nHeight)
@@ -49,7 +64,7 @@ void CXXXListView::set_row_heigt(int nHeight)
  }
 
  /*
-	遍历进程并插入
+	4. 遍历进程并插入
  */
 
 void CXXXListView::insert_process()
@@ -90,7 +105,7 @@ EXIT:
 }
 
 /*
-	设置风格
+	5. 设置风格
 */
 
 void CXXXListView::set_style()
@@ -112,7 +127,7 @@ void CXXXListView::set_style()
 
 
  /*
-	弹出菜单
+	6. 弹出菜单
  */
 
  void CXXXListView::OnNMRClick(NMHDR* pNMHDR, LRESULT* pResult)
@@ -155,4 +170,82 @@ void CXXXListView::OnPopPop()
 	_itow_s(nItemCount, szBuff, 10);
 
 	AfxMessageBox(szBuff);
+}
+
+
+ /*
+	7. 设置系统图标
+ */
+
+
+void CXXXListView::initialize_icon()
+{
+
+	HIMAGELIST hImageListLarge = NULL;
+	HIMAGELIST hImageListSmall = NULL;
+	Shell_GetImageLists(&hImageListLarge, &hImageListSmall);
+	ListView_SetImageList(GetListCtrl().m_hWnd, hImageListLarge, LVSIL_NORMAL);
+	ListView_SetImageList(GetListCtrl().m_hWnd, hImageListSmall, LVSIL_SMALL);
+}
+
+int get_icon_index(LPCTSTR lpFileName, DWORD dwFileAttributes)
+{
+	SHFILEINFO	sfi;
+
+	dwFileAttributes == INVALID_FILE_ATTRIBUTES ?
+		dwFileAttributes = FILE_ATTRIBUTE_NORMAL : 
+		dwFileAttributes |= FILE_ATTRIBUTE_NORMAL;
+
+	SHGetFileInfo
+	(
+		lpFileName,
+		dwFileAttributes,
+		&sfi,
+		sizeof(SHFILEINFO),
+		SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES
+	);
+	DestroyIcon(sfi.hIcon);
+	return sfi.iIcon;
+}
+
+// 获得硬盘图标
+int get_driver_icon(TCHAR cDriver, UINT uDriverType)
+{
+	int nIconIndex = -1;
+	if (cDriver == 'A' || cDriver == 'B')
+	{
+		nIconIndex = 6;
+	}
+	else
+	{
+		switch (uDriverType)
+		{
+		case DRIVE_REMOVABLE:
+			nIconIndex = 7;
+			break;
+		case DRIVE_FIXED:
+			nIconIndex = 8;
+			break;
+		case DRIVE_REMOTE:
+			nIconIndex = 9;
+			break;
+		case DRIVE_CDROM:
+			nIconIndex = 11;
+			break;
+		default:
+			nIconIndex = 8;
+			break;
+		}
+	}
+
+	return nIconIndex;
+}
+
+/*
+	8. 清空全部列和行
+*/
+void CXXXListView::delete_all_items()
+{
+	DeleteAllItems();
+	while(GetListCtrl().DeleteColumn(0));
 }
